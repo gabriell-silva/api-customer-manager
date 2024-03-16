@@ -20,7 +20,7 @@ Instruções para iniciar projeto em sua máquina local para fins de desenvolvim
 🔧 Instalação
 
  - Clone o repositório:
-   - git clone ``` ```
+   - ```git clone git@github.com:gabriell-silva/api-customer-manager.git```
 
  
  - copiar env_example: ```cp .env_example .env ```
