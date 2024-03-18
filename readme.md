@@ -23,11 +23,6 @@ Instruções para iniciar projeto em sua máquina local para fins de desenvolvim
    - ```git clone git@github.com:gabriell-silva/api-customer-manager.git```
 
  
- - copiar env_example: ```cp .env_example .env ```
-
-    - incluir valores nas variáveis, conforme solicitado
-
- 
  - Instalando dependecias: ```composer update```
 
 

@@ -49,10 +49,15 @@ class SignIn
                 throw new PDOException("Falha ao atualizar token de usuário.");
             }
 
+            $data = [
+                'username' => $user['username'],
+                'token' => $token
+            ];
+
             return json_encode([
                 'code' => 200,
                 'message' => "Login bem-sucedido!",
-                'token' => $token
+                'data' => $data
             ]);
         } catch (PDOException $exception) {
             // Capturar e lidar com exceções

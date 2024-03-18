@@ -19,33 +19,18 @@ class UpdateClient
                 throw new PDOException("Falha ao conectar com o banco de dados.");
             }
 
-            // Verificar se há dados fornecidos
-            if (empty($data)) {
-                throw new PDOException("Nenhuma informação fornecida para atualizar o cliente.");
-            }
-
             // Verificar se o cliente já existe
             $existingClient = $pdo->prepare("SELECT * FROM clients WHERE id = ?");
             $existingClient->execute([$id]);
             $client = $existingClient->fetch(PDO::FETCH_ASSOC);
 
             if (!$client) {
-                throw new PDOException("Cliente já existe.");
+                throw new PDOException("Cliente não encontrado.");
             }
 
-            // Atualizar endereços
-            if (isset($data['addresses'])) {
-                foreach ($data['addresses'] as $address) {
-                    $sql = $pdo->prepare("UPDATE address SET street = :street, number = :number WHERE id = :id");
-                    $sql->bindParam(':street', $address['street']);
-                    $sql->bindParam(':number', $address['number']);
-                    $sql->bindParam(':id', $address['id']);
-                    $sql->execute();
-
-                    if (!$sql) {
-                        throw new PDOException("Falha ao atualizar o endereço: " . $pdo->errorInfo()[2]);
-                    }
-                }
+            // Atualizar ou criar endereços
+            if (isset($data['addresses']) && is_array($data['addresses'])) {
+                $this->updateAddresses($pdo, $id, $data['addresses']);
             }
 
             // Preparar e executar a consulta SQL para atualizar o cliente
@@ -81,6 +66,57 @@ class UpdateClient
                 'code' => $exception->getCode(),
                 'message' => $exception->getMessage()
             ]);
+        }
+    }
+
+    private function updateAddresses(PDO $pdo, int $clientId, array $addresses)
+    {
+        foreach ($addresses as $address) {
+            if (!isset($address['id'])) {
+                $sql = $pdo->prepare("INSERT INTO address (street, number) VALUES (:street, :number)");
+                $sql->bindParam(':street', $address['street']);
+                $sql->bindParam(':number', $address['number']);
+                $sql->execute();
+
+                if (!$sql) {
+                    throw new PDOException("Falha ao inserir o novo endereço: " . $pdo->errorInfo()[2]);
+                }
+
+                $addressId = $pdo->lastInsertId();
+
+                // Relacionar o endereço ao cliente
+                $sql = $pdo->prepare("INSERT INTO client_address (client_id, address_id) VALUES (:client_id, :address_id)");
+                $sql->bindParam(':client_id', $clientId);
+                $sql->bindParam(':address_id', $addressId);
+                $sql->execute();
+
+                if (!$sql) {
+                    throw new PDOException("Falha ao relacionar o endereço ao cliente: " . $pdo->errorInfo()[2]);
+                }
+            } else {
+                if (isset($address['removed']) && $address['removed'] === true) {
+                    // Remover o relacionamento do endereço com o cliente
+                    $sql = $pdo->prepare("DELETE FROM client_address WHERE client_id = :client_id AND address_id = :address_id");
+                    $sql->bindParam(':client_id', $clientId);
+                    $sql->bindParam(':address_id', $address['id']);
+                    $sql->execute();
+
+                    if (!$sql) {
+                        throw new PDOException("Falha ao remover o relacionamento do endereço com o cliente: " . $pdo->errorInfo()[2]);
+                    }
+                } else {
+                    // Atualizar o endereço
+                    $sql = $pdo->prepare("UPDATE address SET street = :street, number = :number WHERE id = :address_id");
+                    $sql->bindParam(':street', $address['street']);
+                    $sql->bindParam(':number', $address['number']);
+                    $sql->bindParam(':address_id', $address['id']);
+                    $sql->execute();
+
+                    if (!$sql) {
+                        throw new PDOException("Falha ao atualizar o endereço: " . $pdo->errorInfo()[2]);
+                    }
+                }
+            }
         }
     }
 }
