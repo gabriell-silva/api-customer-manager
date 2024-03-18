@@ -23,7 +23,7 @@ Instruções para iniciar projeto em sua máquina local para fins de desenvolvim
    - ```git clone git@github.com:gabriell-silva/api-customer-manager.git```
 
  
- - Instalando dependecias: ```composer update```
+ - Instalando dependências: ```composer update```
 
 
  - Executar projeto 
