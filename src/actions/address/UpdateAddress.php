@@ -12,10 +12,7 @@ class UpdateAddress
     {
         try {
             // Criar uma instância do banco de dados
-            $db = new InstanceDatabase();
-
-            // Conectar ao banco de dados
-            $pdo = $db->connection();
+            $pdo = (new InstanceDatabase())->connection();
 
             // Verificar se a conexão foi mal-sucedida
             if (!$pdo) {
@@ -28,23 +25,23 @@ class UpdateAddress
             }
 
             // Verificar se o endereço com o ID fornecido existe
-            $existingClient = $pdo->prepare("SELECT * FROM address WHERE id = ?");
-            $existingClient->execute([$id]);
+            $existingAddress = $pdo->prepare("SELECT * FROM address WHERE id = ?");
+            $existingAddress->execute([$id]);
 
-            $address = $existingClient->fetch(PDO::FETCH_ASSOC);
+            $address = $existingAddress->fetch(PDO::FETCH_ASSOC);
 
             if (!$address) {
-                throw new PDOException("Cliente com o ID fornecido não existe.");
+                throw new PDOException("Endereço não encontrado.");
             }
 
             // Preparar e executar a consulta SQL para atualizar o cliente
             $sql = $pdo->prepare("UPDATE address 
                                   SET street = :street, 
-                                      number_home = :number_home
+                                      number = :number
                                   WHERE id = $id");
 
             $sql->bindParam(':street', $data['street']);
-            $sql->bindParam(':number_home', $data['number_home']);
+            $sql->bindParam(':number', $data['number']);
             $sql->execute();
 
             // Verificar se a consulta foi bem-sucedida

@@ -13,18 +13,23 @@ class ShowClient
         try {
 
             // Criar uma instância do banco de dados
-            $db = new InstanceDatabase();
-
-            // Conectar ao banco de dados
-            $pdo = $db->connection();
+            $pdo = (new InstanceDatabase())->connection();
 
             // Verificar se a conexão foi mal-sucedida
             if (!$pdo) {
                 throw new PDOException("Falha ao conectar com banco de dados.");
             }
 
-            // Preparar e executar a consulta SQL
-            $sql = $pdo->prepare("SELECT * FROM clients WHERE id = $id");
+            // Preparar e executar a consulta SQL para obter os dados do cliente
+            $sql = $pdo->prepare("
+                SELECT clients.*, address.id as address_id, address.street, address.number
+                FROM clients
+                LEFT JOIN client_address ON clients.id = client_address.client_id
+                LEFT JOIN address ON client_address.address_id = address.id
+                WHERE clients.id = :id
+                ORDER BY clients.id ASC
+            ");
+            $sql->bindParam(':id', $id, PDO::PARAM_INT);
             $sql->execute();
 
             // Verificar se a consulta foi mal-sucedida
@@ -33,19 +38,34 @@ class ShowClient
             }
 
             // Buscar os resultados da consulta
-            $client = $sql->fetch(PDO::FETCH_ASSOC);
+            $clientData = $sql->fetch(PDO::FETCH_ASSOC);
 
             // Verificar se há resultados
-            if (empty($client)) {
-                throw new PDOException("cliente não encontrado.");
+            if (empty($clientData)) {
+                throw new PDOException("Cliente não encontrado.");
             }
 
+            // Preparar e executar a consulta SQL para obter os endereços do cliente
+            $sqlAddresses = $pdo->prepare("
+                SELECT address.id, address.street, address.number
+                FROM address
+                INNER JOIN client_address ON address.id = client_address.address_id
+                WHERE client_address.client_id = :id
+            ");
+            $sqlAddresses->bindParam(':id', $id, PDO::PARAM_INT);
+            $sqlAddresses->execute();
 
-           return json_encode([
-               'code' => 200,
-               'data' => $client,
-               'message' => "Cliente listado, com sucesso!"
-           ]);
+            // Buscar os endereços do cliente
+            $addresses = $sqlAddresses->fetchAll(PDO::FETCH_ASSOC);
+
+            // Adicionar os endereços aos dados do cliente
+            $clientData['addresses'] = $addresses;
+
+            return json_encode([
+                'code' => 200,
+                'data' => $clientData,
+                'message' => "Cliente listado com sucesso!"
+            ]);
         } catch (PDOException $exception) {
             // Capturar e lidar com exceções
             return json_encode([

@@ -27,12 +27,6 @@ header("Access-Control-Allow-Headers: *");
 header("Access-Control-Allow-Credentials: true");
 header('Content-Type: application/json');
 
-/**
- * Carregar variáveis de ambiente do arquivo .env
- */
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../..');
-$dotenv->load();
-
 $environment = 'development';
 
 /**

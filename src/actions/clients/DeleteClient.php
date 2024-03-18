@@ -11,46 +11,37 @@ class DeleteClient
     public function handle(int $id)
     {
         try {
-
             // Criar uma instância do banco de dados
-            $db = new InstanceDatabase();
-
-            // Conectar ao banco de dados
-            $pdo = $db->connection();
+            $pdo = (new InstanceDatabase())->connection();
 
             // Verificar se a conexão foi mal-sucedida
             if (!$pdo) {
                 throw new PDOException("Falha ao conectar com banco de dados.");
             }
 
-            // Preparar e executar a consulta SQL
-            $sql = $pdo->prepare("SELECT * FROM clients WHERE id = $id");
+            // Iniciar uma transação para garantir consistência nos dados
+            $pdo->beginTransaction();
+
+            // Excluir os registros associados na tabela de associação client_address
+            $sql = $pdo->prepare("DELETE FROM client_address WHERE client_id = $id");
             $sql->execute();
 
-            // Verificar se a consulta foi mal-sucedida
-            if (!$sql) {
-                throw new PDOException("Falha ao executar consulta: " . $pdo->errorInfo()[2]);
-            }
+            // Excluir os registros da tabela clients
+            $sql = $pdo->prepare("DELETE FROM clients WHERE id = $id");
+            $sql->execute();
 
-            // Resultado da consulta
-            $client = $sql->fetch(PDO::FETCH_ASSOC);
+            // Confirmar a transação
+            $pdo->commit();
 
-            if (!empty($client)) {
-                $sql = $pdo->prepare("DELETE FROM clients WHERE id = $id");
-                $sql->execute();
-            }
-
-            // Verificar se há resultados
-            if (empty($client)) {
-                throw new PDOException("cliente não encontrado.");
-            }
-
-           return json_encode([
-               'code' => 200,
-               'data' => [],
-               'message' => 'cliente excluido, com sucesso!'
-           ]);
+            return json_encode([
+                'code' => 200,
+                'data' => [],
+                'message' => 'Cliente excluído com sucesso!'
+            ]);
         } catch (PDOException $exception) {
+            // Rollback da transação em caso de erro
+            $pdo->rollBack();
+
             // Capturar e lidar com exceções
             return json_encode([
                 'code' => $exception->getCode(),

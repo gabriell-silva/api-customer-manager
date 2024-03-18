@@ -6,8 +6,5 @@ CREATE TABLE IF NOT EXISTS clients(
     `date_birth` DATE NOT NULL,
     `document_cpf` VARCHAR(11) UNIQUE NOT NULL,
     `document_rg` VARCHAR(11) UNIQUE NOT NULL,
-    `phone_number` VARCHAR(255),
-    `address_id` INT(11) NOT NULL,
-
-    FOREIGN KEY (`address_id`) REFERENCES `address`(`id`)
+    `phone_number` VARCHAR(255)
 );

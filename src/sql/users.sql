@@ -6,3 +6,7 @@ CREATE TABLE IF NOT EXISTS users(
     `password` varchar(50) DEFAULT NULL,
     `token` TEXT DEFAULT NULL
 );
+
+
+INSERT INTO users(username, password)
+VALUES('admin','123456a');

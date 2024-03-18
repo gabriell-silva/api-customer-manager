@@ -13,10 +13,7 @@ class SignOut
     {
         try {
             // Criar uma instância do banco de dados
-            $db = new InstanceDatabase();
-
-            // Conectar ao banco de dados
-            $pdo = $db->connection();
+            $pdo = (new InstanceDatabase())->connection();
 
             // Verificar se a conexão foi mal-sucedida
             if (!$pdo) {

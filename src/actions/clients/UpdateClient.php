@@ -12,10 +12,7 @@ class UpdateClient
     {
         try {
             // Criar uma instância do banco de dados
-            $db = new InstanceDatabase();
-
-            // Conectar ao banco de dados
-            $pdo = $db->connection();
+            $pdo = (new InstanceDatabase())->connection();
 
             // Verificar se a conexão foi mal-sucedida
             if (!$pdo) {
@@ -27,13 +24,28 @@ class UpdateClient
                 throw new PDOException("Nenhuma informação fornecida para atualizar o cliente.");
             }
 
-            // Verificar se o cliente com o ID fornecido existe
+            // Verificar se o cliente já existe
             $existingClient = $pdo->prepare("SELECT * FROM clients WHERE id = ?");
             $existingClient->execute([$id]);
             $client = $existingClient->fetch(PDO::FETCH_ASSOC);
 
             if (!$client) {
-                throw new PDOException("Cliente com o ID fornecido não existe.");
+                throw new PDOException("Cliente já existe.");
+            }
+
+            // Atualizar endereços
+            if (isset($data['addresses'])) {
+                foreach ($data['addresses'] as $address) {
+                    $sql = $pdo->prepare("UPDATE address SET street = :street, number = :number WHERE id = :id");
+                    $sql->bindParam(':street', $address['street']);
+                    $sql->bindParam(':number', $address['number']);
+                    $sql->bindParam(':id', $address['id']);
+                    $sql->execute();
+
+                    if (!$sql) {
+                        throw new PDOException("Falha ao atualizar o endereço: " . $pdo->errorInfo()[2]);
+                    }
+                }
             }
 
             // Preparar e executar a consulta SQL para atualizar o cliente
@@ -42,16 +54,15 @@ class UpdateClient
                                       date_birth = :date_birth, 
                                       document_cpf = :document_cpf, 
                                       document_rg = :document_rg, 
-                                      phone_number = :phone_number, 
-                                      address_id = :address_id
-                                  WHERE id = $id");
+                                      phone_number = :phone_number
+                                  WHERE id = :client_id");
 
             $sql->bindParam(':name', $data['name']);
             $sql->bindParam(':date_birth', $data['date_birth']);
             $sql->bindParam(':document_cpf', $data['document_cpf']);
             $sql->bindParam(':document_rg', $data['document_rg']);
             $sql->bindParam(':phone_number', $data['phone_number']);
-            $sql->bindParam(':address_id', $data['address_id']);
+            $sql->bindParam(':client_id', $id);
             $sql->execute();
 
             // Verificar se a consulta foi bem-sucedida
